@@ -11,12 +11,12 @@ abs_path = os.path.dirname(__file__)
 
 setup(
     name='iridium',
-    version='0.1.2',
+    version='0.1.3',
     packages=find_packages(),
     package_data={'iridium': ['_webdriwers/linux64_chromedriver',
                               '_webdriwers/mac64_chromedriver',
                               '_webdriwers/win32_chromedriver.exe'], },
-    url='',
+    url='https://github.com/RusJr/iridium',
     license='MIT',
     author='Rus Jr',
     author_email='binderrrr@gmail.com',
