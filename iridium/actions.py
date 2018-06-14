@@ -46,6 +46,7 @@ class OpenPage(BrowserAction):
         # self.timeout = timeout  TODO
 
     def execute(self, driver: WebDriver):
+        self.logger.debug('[OpenPage] %s', self.url)
         driver.get(self.url)
 
 
@@ -105,6 +106,7 @@ class Sleep(BrowserAction):
         self.sleep_time = sleep_time
 
     def execute(self, driver: WebDriver):
+        self.logger.debug('[Sleep] Starting sleep %s seconds ...', self.sleep_time)
         sleep(self.sleep_time)
 
 
