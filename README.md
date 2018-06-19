@@ -24,6 +24,6 @@ my_script = [
 
 
 if __name__ == '__main__':
-    browser = ChromeBrowser()
-    browser.execute(my_script, delay=0.3)
+    browser = ChromeBrowser(headless=False, logging_file='my_test.log')
+    browser.execute(my_script, delay=0.1)
 ```
