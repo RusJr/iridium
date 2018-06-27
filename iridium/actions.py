@@ -50,20 +50,37 @@ class OpenPage(BrowserAction):
         driver.get(self.url)
 
 
-class Click(BrowserAction):
+class Exists(BrowserAction):
 
     def __init__(self, xpath, timeout=10):
         self.xpath = xpath
         self.timeout = timeout
 
-    def execute(self, driver: WebDriver):
+    def execute(self, driver: WebDriver) -> bool:
+        try:
+            wait_element_clickable(driver, xpath=self.xpath, wait=self.timeout)
+        except (NoSuchElementException, TimeoutException):
+            self.logger.debug('[Exists] Fale XPATH: %s', self.xpath)
+            return False
+        else:
+            self.logger.debug('[Exists] True XPATH: %s', self.xpath)
+            return True
+
+
+class Click(BrowserAction):
+
+    def __init__(self, xpath, timeout=60):
+        self.xpath = xpath
+        self.timeout = timeout
+
+    def execute(self, driver: WebDriver) -> None:
         wait_element_clickable(driver, xpath=self.xpath, wait=self.timeout).click()
         self.logger.debug('[Click] XPATH: %s', self.xpath)
 
 
 class Input(BrowserAction):
 
-    def __init__(self, text: str, xpath, timeout=10):
+    def __init__(self, text: str, xpath, timeout=60):
         self.xpath = xpath
         self.text = text
         self.timeout = timeout
@@ -76,23 +93,24 @@ class Input(BrowserAction):
 
 class Read(BrowserAction):
 
-    def __init__(self, xpath, timeout=10):
+    def __init__(self, xpath, timeout=60):
         self.xpath = xpath
         self.timeout = timeout
 
-    def execute(self, driver: WebDriver):
+    def execute(self, driver: WebDriver) -> str:
         text = wait_element_located(driver, self.xpath, self.timeout).text
         self.logger.debug('[Read] "%s" XPATH: %s', text, self.xpath)
+        return text
 
 
 class RaiseOnExist(BrowserAction):
 
-    def __init__(self, xpath, timeout=2, exception=None):
+    def __init__(self, xpath, timeout=5, exception=None):
         self.xpath = xpath
         self.timeout = timeout
         self.exception = exception
 
-    def execute(self, driver: WebDriver):
+    def execute(self, driver: WebDriver) -> None:
         try:
             wait_element_located(driver, self.xpath, self.timeout)
             raise self.exception or Exception('Element found: %s' % self.xpath)
@@ -105,7 +123,7 @@ class Sleep(BrowserAction):
     def __init__(self, sleep_time: int):
         self.sleep_time = sleep_time
 
-    def execute(self, driver: WebDriver):
+    def execute(self, driver: WebDriver) -> None:
         self.logger.debug('[Sleep] Starting sleep %s seconds ...', self.sleep_time)
         sleep(self.sleep_time)
 
@@ -115,6 +133,6 @@ class MakeScreen(BrowserAction):
     def __init__(self, file_name='screen.png'):
         self.file_name = file_name
 
-    def execute(self, driver: WebDriver):
+    def execute(self, driver: WebDriver) -> None:
         driver.save_screenshot(self.file_name)
         self.logger.debug('[MakeScreen] %s', self.file_name)

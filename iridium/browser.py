@@ -1,6 +1,8 @@
 import logging.config
 import os
 import platform
+import socket
+from http.client import CannotSendRequest
 from logging import FileHandler
 from logging.handlers import RotatingFileHandler
 from time import sleep
@@ -8,15 +10,18 @@ from typing import List
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.remote.command import Command
 
 from iridium.actions import BrowserAction
 
 
 class ChromeBrowser:
     """
-    Default browser Chrome
-    Find browser path on Ubuntu: 'which firefox'
+    finds Chrome automatically
     """
+
+    window_size = (1366, 768)
+    page_load_timeout = 60
 
     _chromedriver_map = {
         'Linux': '/_webdriwers/linux64_chromedriver',
@@ -24,18 +29,45 @@ class ChromeBrowser:
         'Darwin': '/_webdriwers/mac64_chromedriver',
     }
 
-    # accept_language = 'ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4'
-    window_size = (1366, 768)
-    page_load_timeout = 15
-
     def __init__(self, logging_file=None, headless=False):
         self.logger = logging.getLogger('Iridium')
         self._init_logging(logging_file)
+        # self.action_timeout = action_timeout
         self.browser = None
-        self._open_browser(headless)
+        self.open_browser(headless)
 
     def __del__(self):
-        self._close_browser()
+        self.close_browser()
+
+    def open_browser(self, headless=False):
+        if not self.browser_is_open:
+            options = Options()
+            options.headless = headless
+
+            self.browser = webdriver.Chrome(self._chromedriver_path, chrome_options=options)
+            self.browser.set_window_size(*self.window_size)
+            self.browser.delete_all_cookies()
+            self.browser.set_page_load_timeout(self.page_load_timeout)
+            self.logger.debug('Started browser instance')
+        else:
+            self.logger.debug('Browser already open')
+
+    @property
+    def browser_is_open(self) -> bool:
+        if hasattr(self, 'browser') and self.browser:
+            try:
+                status = self.browser.execute(Command.STATUS)
+                return True
+            except (socket.error, CannotSendRequest):
+                pass
+        return False
+
+    def close_browser(self):
+        if self.browser_is_open:
+            try:
+                self.browser.quit()
+            except ImportError:
+                pass
 
     def execute(self, actions: List[BrowserAction], delay=0):
         for number, action in enumerate(actions, 1):
@@ -47,6 +79,9 @@ class ChromeBrowser:
             sleep(delay)
         self.logger.info('Script executed')
 
+    def run(self, action: BrowserAction):
+        return action.execute(self.browser)
+
     @property
     def _chromedriver_path(self) -> str:
         abs_dir_path = os.path.join(os.path.dirname(__file__))
@@ -55,22 +90,6 @@ class ChromeBrowser:
             return abs_dir_path + self._chromedriver_map[platform_name]
         except KeyError:
             raise Exception('OS detecting problem (%s)' % platform_name)
-
-    def _open_browser(self, headless=False):
-
-        options = Options()
-        options.headless = headless
-
-        self.browser = webdriver.Chrome(self._chromedriver_path, chrome_options=options)
-        self.browser.set_window_size(*self.window_size)
-        self.browser.delete_all_cookies()
-        self.browser.set_page_load_timeout(self.page_load_timeout)
-        self.logger.debug('Started browser instance')
-
-    def _close_browser(self):
-        if hasattr(self, 'browser') and self.browser:
-            self.browser.quit()
-        # self.logger.debug('browser closed')
 
     def _init_logging(self, logging_file=None):
         log_dict = {
@@ -87,7 +106,6 @@ class ChromeBrowser:
                                                'filename': logging_file,
                                                'mode': 'w',
                                                'formatter': 'ir_format', }
-                                               # 'maxBytes': 10485760}
             log_dict['loggers']['Iridium']['handlers'].append('ir_file')
 
         logging.config.dictConfig(log_dict)

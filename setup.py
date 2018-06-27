@@ -11,7 +11,7 @@ abs_path = os.path.dirname(__file__)
 
 setup(
     name='iridium',
-    version='0.1.51',
+    version='0.1.61',
     packages=find_packages(),
     package_data={'iridium': ['_webdriwers/linux64_chromedriver',
                               '_webdriwers/mac64_chromedriver',
